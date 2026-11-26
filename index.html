@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Taberna do Gnomo — Gestão de Estoque & PDV</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <section id="login-screen" class="login-wrapper">
+    <div class="login-card">
+      <h1>🍺 Taberna do Gnomo</h1>
+      <p>Gestão de Estoque & Delivery</p>
+      <form id="login-form">
+        <label>E-mail
+          <input type="email" id="login-email" required placeholder="seu@email.com" />
+        </label>
+        <label>Senha
+          <input type="password" id="login-password" required placeholder="••••••••" />
+        </label>
+        <button type="submit" class="btn btn-primary btn-full">Entrar no Sistema</button>
+        <p id="login-error" class="error-msg"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- SISTEMA PRINCIPAL -->
+  <div id="app-screen" class="hidden">
+    <header class="topbar">
+      <div class="brand">
+        <strong>🍺 Taberna do Gnomo</strong>
+        <span id="user-badge" class="badge"></span>
+      </div>
+      <button id="btn-logout" class="btn btn-outline btn-sm">Sair</button>
+    </header>
+
+    <!-- NAVEGAÇÃO -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="tab-estoque">📦 Estoque</button>
+      <button class="tab-btn" data-tab="tab-vendas">🛒 Vendas (PDV)</button>
+      <button class="tab-btn" data-tab="tab-entradas">📥 Entradas</button>
+      <button class="tab-btn" data-tab="tab-despesas">💸 Despesas & Resumo</button>
+    </nav>
+
+    <main class="container">
+
+      <!-- ================= ABA 1: ESTOQUE ================= -->
+      <section id="tab-estoque" class="tab-content active">
+        <div class="section-header">
+          <h2>Produtos em Estoque</h2>
+          <button id="btn-novo-produto" class="btn btn-primary">+ Novo Produto</button>
+        </div>
+
+        <div class="filters-bar">
+          <input type="text" id="busca-produto" placeholder="Buscar por código ou nome..." />
+          <select id="filtro-categoria">
+            <option value="">Todas as categorias</option>
+            <option value="Cervejas">Cervejas</option>
+            <option value="Destilados">Destilados</option>
+            <option value="Refrigerantes/Sucos">Refrigerantes/Sucos</option>
+            <option value="Energéticos">Energéticos</option>
+            <option value="Gelo/Carvão">Gelo/Carvão</option>
+            <option value="Combos">Combos</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>COD</th>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Custo</th>
+                <th>Venda</th>
+                <th>% Lucro</th>
+                <th>Qtd</th>
+                <th>Últ. Atualização</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="lista-produtos"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= ABA 2: VENDAS (PDV) ================= -->
+      <section id="tab-vendas" class="tab-content hidden">
+        <div class="grid-2">
+          <!-- Adicionar ao Carrinho -->
+          <div class="card">
+            <h3>Nova Venda Delivery</h3>
+            <div class="form-group">
+              <label>Selecionar Bebida / Item
+                <select id="venda-produto"></select>
+              </label>
+            </div>
+            <div class="row-2">
+              <label>Quantidade
+                <input type="number" id="venda-qtd" min="1" value="1" />
+              </label>
+              <div class="align-end">
+                <button type="button" id="btn-add-carrinho" class="btn btn-primary btn-full">+ Adicionar Item</button>
+              </div>
+            </div>
+
+            <hr />
+
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Qtd</th>
+                    <th>Unit.</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="carrinho-itens"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Fechamento da Venda -->
+          <div class="card">
+            <h3>Fechamento do Pedido</h3>
+            <label>Cliente / Identificação (opcional)
+              <input type="text" id="venda-cliente" placeholder="Ex: Pedido iFood / WhatsApp João" />
+            </label>
+            <div class="row-2">
+              <label>Cupom / Desconto (R$)
+                <input type="number" id="venda-desconto" min="0" step="0.01" value="0" />
+              </label>
+              <label>Pagamento
+                <select id="venda-pagamento">
+                  <option value="Pix">Pix</option>
+                  <option value="Cartão Crédito">Cartão Crédito</option>
+                  <option value="Cartão Débito">Cartão Débito</option>
+                  <option value="Dinheiro">Dinheiro</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="totals-box">
+              <div><span>Subtotal:</span> <strong id="resumo-subtotal">R$ 0,00</strong></div>
+              <div><span>Desconto:</span> <strong id="resumo-desconto" class="text-danger">- R$ 0,00</strong></div>
+              <div class="total-final"><span>Total Líquido:</span> <strong id="resumo-total">R$ 0,00</strong></div>
+            </div>
+
+            <button type="button" id="btn-finalizar-venda" class="btn btn-success btn-full">
+              ✅ Finalizar Venda & Baixar Estoque
+            </button>
+            <small class="hint">* Estrutura pronta para integração futura de emissão NFC-e.</small>
+          </div>
+        </div>
+
+        <h3 class="mt-2">Últimas Vendas Registradas</h3>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Cliente</th>
+                <th>Itens</th>
+                <th>Desconto</th>
+                <th>Total Líquido</th>
+                <th>Pagamento</th>
+              </tr>
+            </thead>
+            <tbody id="lista-vendas"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= ABA 3: ENTRADAS (COMPRAS) ================= -->
+      <section id="tab-entradas" class="tab-content hidden">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Registrar Compra / Reposição</h3>
+            <form id="form-entrada">
+              <label>Produto
+                <select id="entrada-produto" required></select>
+              </label>
+              <div class="row-2">
+                <label>Quantidade Comprada
+                  <input type="number" id="entrada-qtd" min="1" required placeholder="Ex: 24" />
+                </label>
+                <label>Novo Preço Custo Unit. (R$)
+                  <input type="number" id="entrada-custo" min="0" step="0.01" required />
+                </label>
+              </div>
+              <label>Fornecedor / Observação
+                <input type="text" id="entrada-fornecedor" placeholder="Ex: Distribuidora Ambev / Nota 123" />
+              </label>
+              <button type="submit" class="btn btn-primary btn-full">📥 Confirmar Entrada no Estoque</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Histórico de Compras</h3>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Custo Un.</th>
+                    <th>Fornecedor</th>
+                  </tr>
+                </thead>
+                <tbody id="lista-entradas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ABA 4: DESPESAS & RESUMO ================= -->
+      <section id="tab-despesas" class="tab-content hidden">
+        <!-- Cards de Resumo -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <span>Vendas Líquidas</span>
+            <strong id="kpi-vendas" class="text-success">R$ 0,00</strong>
+          </div>
+          <div class="kpi-card">
+            <span>Despesas Operacionais</span>
+            <strong id="kpi-despesas" class="text-danger">R$ 0,00</strong>
+          </div>
+          <div class="kpi-card">
+            <span>Saldo (Vendas - Despesas)</span>
+            <strong id="kpi-saldo">R$ 0,00</strong>
+          </div>
+          <div class="kpi-card">
+            <span>Valor em Estoque (Custo)</span>
+            <strong id="kpi-estoque">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <div class="export-bar">
+          <span>Exportar relatórios para Excel / Google Sheets:</span>
+          <div class="btn-group">
+            <button id="btn-export-produtos" class="btn btn-outline btn-sm">📄 CSV Estoque</button>
+            <button id="btn-export-vendas" class="btn btn-outline btn-sm">📄 CSV Vendas</button>
+            <button id="btn-export-despesas" class="btn btn-outline btn-sm">📄 CSV Despesas</button>
+          </div>
+        </div>
+
+        <div class="grid-2 mt-2">
+          <div class="card">
+            <h3>Lançar Despesa Adicional</h3>
+            <form id="form-despesa">
+              <label>Descrição do Gasto
+                <input type="text" id="despesa-desc" required placeholder="Ex: Gasolina moto entrega" />
+              </label>
+              <div class="row-2">
+                <label>Categoria
+                  <select id="despesa-cat">
+                    <option value="Combustível / Moto">Combustível / Moto</option>
+                    <option value="Embalagens / Gelo">Embalagens / Gelo</option>
+                    <option value="Taxas / Sistemas">Taxas / Sistemas</option>
+                    <option value="Outros">Outros</option>
+                  </select>
+                </label>
+                <label>Valor (R$)
+                  <input type="number" id="despesa-valor" min="0.01" step="0.01" required placeholder="0,00" />
+                </label>
+              </div>
+              <button type="submit" class="btn btn-danger btn-full">💸 Registrar Despesa</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Despesas Lançadas</h3>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="lista-despesas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL CADASTRO / EDIÇÃO DE PRODUTO -->
+  <div id="modal-produto" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-titulo">Cadastrar Produto</h3>
+        <button type="button" id="btn-fechar-modal" class="close-btn">&times;</button>
+      </div>
+      <form id="form-produto">
+        <input type="hidden" id="prod-id" />
+        <div class="row-2">
+          <label>Código (COD)
+            <input type="text" id="prod-cod" required placeholder="Ex: 001" />
+          </label>
+          <label>Categoria
+            <select id="prod-categoria" required>
+              <option value="Cervejas">Cervejas</option>
+              <option value="Destilados">Destilados</option>
+              <option value="Refrigerantes/Sucos">Refrigerantes/Sucos</option>
+              <option value="Energéticos">Energéticos</option>
+              <option value="Gelo/Carvão">Gelo/Carvão</option>
+              <option value="Combos">Combos</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Nome do Produto
+          <input type="text" id="prod-nome" required placeholder="Ex: Heineken Long Neck 330ml" />
+        </label>
+
+        <div class="row-3">
+          <label>Preço Custo (R$)
+            <input type="number" id="prod-custo" step="0.01" min="0" required />
+          </label>
+          <label>Preço Venda (R$)
+            <input type="number" id="prod-venda" step="0.01" min="0" required />
+          </label>
+          <label>% Lucro (Auto)
+            <input type="text" id="prod-lucro" readonly placeholder="0%" />
+          </label>
+        </div>
+
+        <div class="row-2">
+          <label>Quantidade Inicial / Atual
+            <input type="number" id="prod-qtd" min="0" required />
+          </label>
+          <label>Estoque Mínimo (Alerta)
+            <input type="number" id="prod-minimo" min="0" value="6" required />
+          </label>
+        </div>
+
+        <details class="fiscal-details">
+          <summary>Dados Fiscais NFC-e (Opcional — para integração futura)</summary>
+          <div class="row-2 mt-1">
+            <label>NCM
+              <input type="text" id="prod-ncm" placeholder="Ex: 22030000" />
+            </label>
+            <label>CFOP
+              <input type="text" id="prod-cfop" placeholder="Ex: 5405" />
+            </label>
+          </div>
+        </details>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-cancelar-modal" class="btn btn-outline">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Produto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
